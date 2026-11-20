@@ -1,0 +1,13 @@
+{
+  "slug": "kds-tempo-real",
+  "titulo": { "pt": "KDS em tempo real para lanchonete", "en": "Real-time kitchen display for a snack bar" },
+  "descricao": {
+    "pt": "Balcão lança o pedido e a cozinha recebe na hora, sem recarregar a página. Tempo de espera por pedido, status e resumo do dia, tudo sincronizado por WebSocket em um Durable Object.",
+    "en": "The counter sends an order and the kitchen sees it instantly, no page reload. Per-order wait time, status and daily summary, all synced over WebSocket in a Durable Object."
+  },
+  "stack": ["TypeScript", "Cloudflare Workers", "Durable Objects", "WebSocket", "SQLite"],
+  "demo": "https://kds-tempo-real.alissondelittig.workers.dev/",
+  "repo": "https://github.com/alissonlittig/kds-tempo-real",
+  "capa": "docs/capa.png",
+  "gif": "docs/demo.gif"
+}

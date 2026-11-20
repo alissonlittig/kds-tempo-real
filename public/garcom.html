@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Balcão · Brasa & Pão</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="top"><h1>Balcão · Brasa &amp; Pão</h1><span class="live" id="live"><i></i><span>conectando…</span></span></header>
+<main>
+ <div class="stats" id="stats"></div>
+ <div class="grid">
+  <section class="panel"><h2>Cardápio</h2><div class="menu" id="menu"></div></section>
+  <section class="panel"><h2>Novo pedido</h2>
+   <label for="mesa" class="vazio">Mesa / comanda</label><input id="mesa" maxlength="12" placeholder="Ex.: 7" autocomplete="off">
+   <ul class="cart" id="cart"></ul><div class="total"><span>Total</span><span id="tot">R$ 0,00</span></div>
+   <div class="row"><button class="pri" id="enviar" disabled>Enviar à cozinha</button><button id="limpar">Zerar o dia</button></div>
+  </section>
+ </div>
+</main>
+<script type="module">
+import { conectar, brl, liveEl, esc } from "./app.js";
+const CARDAPIO = [["X-Brasa",32],["X-Bacon Crocante",36],["Pastel de Feira",14],["Batata Rústica",22],["Frango Empanado",28],["Suco de Laranja",9],["Limonada Suíça",11],["Brownie da Casa",15]];
+const cart = new Map(); const $ = (id) => document.getElementById(id);
+$("menu").innerHTML = CARDAPIO.map(([n,p],i) => `<button data-i="${i}">${esc(n)}<small>${brl(p)}</small></button>`).join("");
+const c = conectar((m) => {
+  const r = m.resumo;
+  $("stats").innerHTML = [["Pedidos hoje",r.total],["Na fila",r.ativos],["Faturamento",brl(r.faturamento)],["Preparo médio",r.tempoMedioMs ? Math.round(r.tempoMedioMs/1000)+" s" : "—"]].map(([k,v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+}, liveEl($("live")));
+function draw(){ let t=0; $("cart").innerHTML=[...cart].map(([i,q])=>{const [n,p]=CARDAPIO[i];t+=p*q;return `<li><span>${q}× ${esc(n)}</span><span>${brl(p*q)}</span></li>`}).join(""); $("tot").textContent=brl(t); $("enviar").disabled=!cart.size||!$("mesa").value.trim(); }
+$("menu").onclick = (e) => { const b=e.target.closest("button"); if(!b) return; cart.set(+b.dataset.i,(cart.get(+b.dataset.i)||0)+1); draw(); };
+$("mesa").oninput = draw;
+$("enviar").onclick = () => { c.enviar({t:"novo",mesa:$("mesa").value,itens:[...cart].map(([i,q])=>({nome:CARDAPIO[i][0],preco:CARDAPIO[i][1],qtd:q}))}); cart.clear(); $("mesa").value=""; draw(); };
+$("limpar").onclick = () => confirm("Zerar todos os pedidos da demo?") && c.enviar({t:"limpar"});
+</script></body></html>

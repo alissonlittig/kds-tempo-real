@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cozinha (KDS) · Brasa & Pão</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="top"><h1>Cozinha · KDS</h1><div class="row"><button id="som" aria-pressed="false">Som: desligado</button><span class="live" id="live"><i></i><span>conectando…</span></span></div></header>
+<main>
+ <div class="cols">
+  <section class="col"><h3>Novos</h3><div id="c-novo"></div></section>
+  <section class="col"><h3>Preparando</h3><div id="c-preparando"></div></section>
+  <section class="col"><h3>Prontos</h3><div id="c-pronto"></div></section>
+ </div>
+</main>
+<script type="module">
+import { conectar, mmss, esc, liveEl, bip } from "./app.js";
+const $ = (id) => document.getElementById(id);
+let estado = null, c, vistos = new Set(), primeiro = true, som = false;
+const PROX = { novo: ["preparando","Iniciar preparo"], preparando: ["pronto","Marcar pronto"], pronto: ["entregue","Entregue"] };
+c = conectar((m) => {
+  const novos = m.pedidos.filter((p) => !vistos.has(p.id));
+  novos.forEach((p) => vistos.add(p.id));
+  estado = m; draw();
+  if (!primeiro && novos.length) { if (som) bip(); novos.forEach((p) => $("t"+p.id)?.classList.add("flash")); }
+  primeiro = false;
+}, liveEl($("live")));
+function draw() {
+  if (!estado) return;
+  for (const s of ["novo","preparando","pronto"]) {
+    const l = estado.pedidos.filter((p) => p.status === s);
+    $("c-"+s).innerHTML = l.map((p) => `<article class="tk ${p.status}" id="t${p.id}"><header><b>Mesa ${esc(p.mesa)}</b><span class="esp" data-c="${p.criado}" data-p="${p.pronto ?? ""}"></span></header>
+      <ul>${p.itens.map((i)=>`<li>${i.qtd}× ${esc(i.nome)}</li>`).join("")}</ul><button class="pri" data-id="${p.id}" data-s="${PROX[s][0]}">${PROX[s][1]}</button></article>`).join("") || `<p class="vazio">Nada por aqui.</p>`;
+  }
+  tick();
+}
+// Cronômetro local por pedido: recalcula a cada segundo sem novo tráfego.
+function tick() {
+  document.querySelectorAll(".esp").forEach((e) => { const ms = (e.dataset.p ? +e.dataset.p : c.agora()) - +e.dataset.c; e.textContent = mmss(ms); e.classList.toggle("late", !e.dataset.p && ms > 8*60e3); });
+}
+setInterval(tick, 1000);
+document.querySelector("main").onclick = (e) => { const b = e.target.closest("button[data-id]"); if (b) c.enviar({ t:"status", id:+b.dataset.id, status:b.dataset.s }); };
+$("som").onclick = () => { som = !som; $("som").textContent = "Som: " + (som ? "ligado" : "desligado"); $("som").setAttribute("aria-pressed", som); if (som) bip(); };
+</script></body></html>
